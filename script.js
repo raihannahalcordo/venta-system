@@ -26,10 +26,6 @@ let transactions = [];
 let machineLogs = [];
 
 let revenueChart = null;
-
-let transactionPage = 1;
-const transactionLimit = 20;
-let totalTransactionPages = 20;
 let isEditMode = false;
 
 async function loadDashboardData() {
@@ -43,7 +39,7 @@ async function loadDashboardData() {
         const coinResponse = await fetch(`${API_BASE_URL}/api/coin-inventory`);
         coinInventory = await coinResponse.json();
 
-        const transactionResponse = await fetch(`${API_BASE_URL}/api/transactions?page=${transactionPage}&limit=${transactionLimit}`);
+        const transactionResponse = await fetch(`${API_BASE_URL}/api/transactions?limit=13`);
         transactions = await transactionResponse.json();
 
         const logsResponse = await fetch(`${API_BASE_URL}/api/machine-logs`);
@@ -57,45 +53,6 @@ async function loadDashboardData() {
         summary.machineStatus = "Offline";
         updateDashboard();
     }
-}
-
-function renderTransactionPagination() {
-    const pageNumbers = document.getElementById("transactionPageNumbers");
-    const prevBtn = document.getElementById("prevTransactionsBtn");
-    const nextBtn = document.getElementById("nextTransactionsBtn");
-
-    if (!pageNumbers || !prevBtn || !nextBtn) return;
-
-    pageNumbers.innerHTML = "";
-
-    prevBtn.disabled = transactionPage === 1;
-    nextBtn.disabled = transactionPage === totalTransactionPages;
-
-    const pages = [1, 2, 3, 4, 5, 6, 7, "...", totalTransactionPages];
-
-    pages.forEach(page => {
-        const btn = document.createElement("button");
-        btn.classList.add("page-number");
-
-        btn.textContent = page;
-
-        if (page === "...") {
-            btn.disabled = true;
-        }
-
-        if (page === transactionPage) {
-            btn.classList.add("active");
-        }
-
-        if (page !== "...") {
-            btn.addEventListener("click", async () => {
-                transactionPage = page;
-                await loadDashboardData();
-            });
-        }
-
-        pageNumbers.appendChild(btn);
-    });
 }
 
 function connectWebSocket() {
@@ -224,7 +181,6 @@ function updateDashboard() {
     displayCoinInventory();
     displayTransactions();
     displayMachineLogs();
-    renderTransactionPagination();
 }
 
 function getProductsRemaining() {
@@ -578,20 +534,6 @@ async function clearLogs() {
         alert("Failed to clear logs.");
     }
 }
-
-document.getElementById("nextTransactionsBtn")?.addEventListener("click", async () => {
-    if (transactionPage < totalTransactionPages) {
-        transactionPage++;
-        await loadDashboardData();
-    }
-});
-
-document.getElementById("prevTransactionsBtn")?.addEventListener("click", async () => {    
-    if (transactionPage > 1) {
-        transactionPage--;
-        await loadDashboardData();
-    }
-});
 
 const navLinks = document.querySelectorAll(".nav-link");
 const sections = document.querySelectorAll(".page-section");
