@@ -30,13 +30,14 @@ let revenueChart = null;
 let transactionPage = 1;
 const transactionLimit = 20;
 let totalTransactionPages = 20;
+let isEditMode = false;
 
 async function loadDashboardData() {
     try {
         const summaryResponse = await fetch(`${API_BASE_URL}/api/summary`);
         summary = await summaryResponse.json();
 
-        const productsResponse = await fetch(`${API_BASE_URL}/api/product-inventory`);
+        const productsResponse = await fetch(`${API_BASE_URL}/api/products`);
         products = await productsResponse.json();
 
         const coinResponse = await fetch(`${API_BASE_URL}/api/coin-inventory`);
@@ -241,35 +242,41 @@ function getLowStockItems() {
 
 function displayInventoryTable() {
     const table = document.getElementById("inventoryTable");
-
     if (!table) return;
 
     table.innerHTML = "";
 
-    if (!products || products.length === 0) {
-        table.innerHTML = `
-            <tr>
-                <td colspan="7">No product inventory found.</td>
-            </tr>
-        `;
-        return;
-    }
-
     products.forEach(product => {
         const productId = product.product_id;
         const productName = product.product_name;
-        const price = product.price;
+        const price = Number(product.price) || 0;
         const stock = Number(product.stock_count) || 0;
-        const maxCapacity = product.max_capacity ?? 0;
+        const maxCapacity = Number(product.max_capacity) || 0;
         const status = getProductStatus(stock);
+
+        const nameField = isEditMode
+            ? `<input type="text" class="edit-name" data-id="${productId}" value="${productName}" />`
+            : productName;
+
+        const priceField = isEditMode
+            ? `<input type="number" class="edit-price" data-id="${productId}" value="${price}" />`
+            : formatPeso(price);
+
+        const stockField = isEditMode
+            ? `<input type="number" class="edit-stock" data-id="${productId}" value="${stock}" />`
+            : stock;
+
+        const maxField = isEditMode
+            ? `<input type="number" class="edit-max" data-id="${productId}" value="${maxCapacity}" />`
+            : maxCapacity;
 
         table.innerHTML += `
             <tr>
                 <td>${productId}</td>
-                <td>${productName}</td>
-                <td>${formatPeso(price)}</td>
-                <td>${stock}</td>
-                <td>${maxCapacity}</td>
+                <td>${nameField}</td>
+                <td>${priceField}</td>
+                <td>${stockField}</td>
+                <td>${maxField}</td>
                 <td>
                     <span class="table-status ${getStatusClass(status)}">
                         ${status}
@@ -359,6 +366,45 @@ function displayTransactions() {
             </tr>
         `;
     });
+}
+
+async function saveInventoryChanges() {
+    const updates = [];
+
+    document.querySelectorAll(".edit-stock").forEach(input => {
+        updates.push({
+            product_id: input.dataset.id,
+            stock_count: input.value
+        });
+    });
+
+    document.querySelectorAll(".edit-max").forEach(input => {
+        const item = updates.find(u => u.product_id === input.dataset.id);
+        if (item) item.max_capacity = input.value;
+    });
+
+    document.querySelectorAll(".edit-price").forEach(input => {
+        const item = updates.find(u => u.product_id === input.dataset.id);
+        if (item) item.price = input.value;
+    });
+
+    document.querySelectorAll(".edit-name").forEach(input => {
+        const item = updates.find(u => u.product_id === input.dataset.id);
+        if (item) item.product_name = input.value;
+    });
+
+    await fetch(`${API_BASE_URL}/api/products/bulk-update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates })
+    });
+
+    alert("Inventory updated!");
+
+    isEditMode = false;
+    document.getElementById("editInventoryBtn").innerText = "Edit Inventory";
+
+    await loadDashboardData();
 }
 
 function displayMachineLogs() {
@@ -659,5 +705,16 @@ document.getElementById("exportLogsBtn")?.addEventListener("click", exportLogsTo
 
 document.getElementById("clearLogsBtn")?.addEventListener("click", clearLogs);
 
+document.getElementById("editInventoryBtn")?.addEventListener("click", async () => {
+    if (!isEditMode) {
+        isEditMode = true;
+        document.getElementById("editInventoryBtn").innerText = "Save Changes";
+        displayInventoryTable();
+    } else {
+        await saveInventoryChanges();
+    }
+});
+
 connectWebSocket();
 loadChart();
+loadDashboardData();
