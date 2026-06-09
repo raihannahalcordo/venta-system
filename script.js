@@ -1,296 +1,557 @@
-require('dotenv').config()
-const machineId = "VENDO-01";
+let API_BASE_URL = "http://localhost:3000";
+let WS_URL = "ws://localhost:3000";
 
-const domain = process.env.DOMAIN
+let machineId = "VM-01";
 
-console.log(domain);
+let summary = {
+    totalRevenue: 0,
+    totalTransactions: 0,
+    productsRemaining: 0,
+    lowStockItems: 0,
+    productTypes: 0,
+    machineStatus: "Offline",
+    lastUpdated: null
+};
 
-let onePeso = 0;
-let fivePeso = 0;
-let tenPeso = 0;
-let twentyPeso = 0;
+let products = [];
+let coinInventory = {
+    one_peso: 0,
+    five_peso: 0,
+    ten_peso: 0,
+    twenty_peso: 0,
+    updated_at: null
+};
 
 let transactions = [];
+let machineLogs = [];
+
+let revenueChart = null;
+
+let transactionPage = 1;
+const transactionLimit = 20;
+let totalTransactionPages = 20;
 
 async function loadDashboardData() {
-
     try {
+        const summaryResponse = await fetch(`${API_BASE_URL}/api/summary`);
+        summary = await summaryResponse.json();
 
-        // =========================
-        // COIN INVENTORY
-        // =========================
+        const productsResponse = await fetch(`${API_BASE_URL}/api/product-inventory`);
+        products = await productsResponse.json();
 
-        const coinResponse = await fetch(domain+"/api/coin-inventory");
-        const coinData = await coinResponse.json();
+        const coinResponse = await fetch(`${API_BASE_URL}/api/coin-inventory`);
+        coinInventory = await coinResponse.json();
 
-        onePeso = coinData.one_peso || 0;
-        fivePeso = coinData.five_peso || 0;
-        tenPeso = coinData.ten_peso || 0;
-        twentyPeso = coinData.twenty_peso || 0;
+        const transactionResponse = await fetch(`${API_BASE_URL}/api/transactions?page=${transactionPage}&limit=${transactionLimit}`);
+        transactions = await transactionResponse.json();
 
-        // =========================
-        // TRANSACTIONS
-        // =========================
-
-        const transactionResponse = await fetch(domain+"/api/transactions");
-        const transactionData = await transactionResponse.json();
-
-        transactions = transactionData.map(transaction => {
-
-            return {
-
-                time: new Date(transaction.created_at).toLocaleTimeString(),
-
-                coin: "₱" + transaction.coin_inserted,
-
-                machine: machineId,
-
-                status: transaction.status
-            };
-
-        });
+        const logsResponse = await fetch(`${API_BASE_URL}/api/machine-logs`);
+        machineLogs = await logsResponse.json();
 
         updateDashboard();
 
     } catch (error) {
-
         console.error("Failed to load dashboard data:", error);
 
+        summary.machineStatus = "Offline";
+        updateDashboard();
+    }
+}
+
+function renderTransactionPagination() {
+    const pageNumbers = document.getElementById("transactionPageNumbers");
+    const prevBtn = document.getElementById("prevTransactionsBtn");
+    const nextBtn = document.getElementById("nextTransactionsBtn");
+
+    if (!pageNumbers || !prevBtn || !nextBtn) return;
+
+    pageNumbers.innerHTML = "";
+
+    prevBtn.disabled = transactionPage === 1;
+    nextBtn.disabled = transactionPage === totalTransactionPages;
+
+    const pages = [1, 2, 3, 4, 5, 6, 7, "...", totalTransactionPages];
+
+    pages.forEach(page => {
+        const btn = document.createElement("button");
+        btn.classList.add("page-number");
+
+        btn.textContent = page;
+
+        if (page === "...") {
+            btn.disabled = true;
+        }
+
+        if (page === transactionPage) {
+            btn.classList.add("active");
+        }
+
+        if (page !== "...") {
+            btn.addEventListener("click", async () => {
+                transactionPage = page;
+                await loadDashboardData();
+            });
+        }
+
+        pageNumbers.appendChild(btn);
+    });
+}
+
+function connectWebSocket() {
+    const socket = new WebSocket(WS_URL);
+
+    socket.onopen = () => {
+        console.log("WebSocket connected");
+    };
+
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === "summary") {
+            summary = data.payload;
+        }
+
+        if (data.type === "productInventory") {
+            products = data.payload;
+        }
+
+        if (data.type === "coinInventory") {
+            coinInventory = data.payload;
+        }
+
+        if (data.type === "transactions") {
+            transactions = data.payload;
+        }
+
+        if (data.type === "machineLogs") {
+            machineLogs = data.payload;
+        }
+
+        updateDashboard();
+    };
+
+    socket.onclose = () => {
+        console.log("WebSocket disconnected. Reconnecting...");
+        setTimeout(connectWebSocket, 3000);
+    };
+
+    socket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+    };
+}
+
+function getProductStatus(stock) {
+    const value = Number(stock) || 0;
+
+    if (value <= 0) return "Sold Out";
+    if (value <= 2) return "Low Stock";
+    return "Available";
+}
+
+function getStatusClass(status) {
+    const value = String(status || "").toLowerCase();
+
+    if (
+        value === "available" ||
+        value === "success" ||
+        value === "resolved" ||
+        value === "online" ||
+        value === "transaction" ||
+        value === "coin update" ||
+        value === "restock"
+    ) {
+        return "success";
+    }
+
+    if (
+        value === "low stock" ||
+        value === "warning"
+    ) {
+        return "warning";
+    }
+
+    if (
+        value === "sold out" ||
+        value === "critical" ||
+        value === "failed" ||
+        value === "offline" ||
+        value === "error"
+    ) {
+        return "danger";
+    }
+
+    return "success";
+}
+
+function formatPeso(value) {
+    const amount = Number(value) || 0;
+    return "₱" + amount.toLocaleString();
+}
+
+function formatTime(value) {
+    return value || "No update";
+}
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+
+    if (element) {
+        element.innerText = value;
     }
 }
 
 function updateDashboard() {
+    const status = summary.machineStatus ?? "Offline";
+    const isOnline = String(status).toLowerCase() === "online";
 
-    let totalAmount =
-        (onePeso * 1) +
-        (fivePeso * 5) +
-        (tenPeso * 10) +
-        (twentyPeso * 20);
+    setText("totalRevenue", formatPeso(summary.totalRevenue ?? summary.total_revenue));
+    setText("totalTransactions", summary.totalTransactions ?? summary.total_transactions ?? transactions.length);
+    setText("productsRemaining", summary.productsRemaining ?? summary.products_remaining ?? getProductsRemaining());
+    setText("lowStockItems", summary.lowStockItems ?? summary.low_stock_items ?? getLowStockItems());
+    setText("lastUpdated", formatTime(summary.lastUpdated ?? summary.last_updated));
 
-    let totalCoins =
-        onePeso +
-        fivePeso +
-        tenPeso +
-        twentyPeso;
+    const machineStatusElement = document.getElementById("machineStatus");
 
-    document.getElementById("totalAmount").innerText =
-        "₱" + totalAmount;
+    if (machineStatusElement) {
+        machineStatusElement.innerHTML = `
+            <span class="machine-dot ${isOnline ? "online" : "offline"}"></span>
+            ${isOnline ? "Online" : "Offline"}
+        `;
+    }
 
-    document.getElementById("totalCoins").innerText =
-        totalCoins + " pcs";
-
-    document.getElementById("machineStatus").innerHTML = `
-        <span class="machine-dot online"></span>
-        Online
-    `;
-
-    document.getElementById("onePesoCount").innerText =
-        onePeso + " pcs";
-
-    document.getElementById("fivePesoCount").innerText =
-        fivePeso + " pcs";
-
-    document.getElementById("tenPesoCount").innerText =
-        tenPeso + " pcs";
-
-    document.getElementById("coinPageOnePeso").innerText =
-    onePeso + " pcs";
-
-document.getElementById("coinPageFivePeso").innerText =
-    fivePeso + " pcs";
-
-document.getElementById("coinPageTenPeso").innerText =
-    tenPeso + " pcs";
-
-// =========================
-// REPORT SECTION
-// =========================
-
-let oneTotal = onePeso * 1;
-let fiveTotal = fivePeso * 5;
-let tenTotal = tenPeso * 10;
-
-document.getElementById("reportOnePeso").innerText =
-    onePeso + " pcs";
-
-document.getElementById("reportOneTotal").innerText =
-    "₱" + oneTotal;
-
-document.getElementById("reportFivePeso").innerText =
-    fivePeso + " pcs";
-
-document.getElementById("reportFiveTotal").innerText =
-    "₱" + fiveTotal;
-
-document.getElementById("reportTenPeso").innerText =
-    tenPeso + " pcs";
-
-document.getElementById("reportTenTotal").innerText =
-    "₱" + tenTotal;
-
-document.getElementById("reportTotalCoins").innerText =
-    totalCoins + " pcs";
-
-document.getElementById("reportTotalAmount").innerText =
-    "₱" + totalAmount;
-
-    document.getElementById("lastUpdated").innerText =
-        new Date().toLocaleTimeString();
-
+    displayInventoryTable();
+    displayCoinInventory();
     displayTransactions();
+    displayMachineLogs();
+    renderTransactionPagination();
 }
 
-function displayTransactions() {
+function getProductsRemaining() {
+    return products.reduce((sum, product) => {
+        return sum + (Number(product.stock_count) || 0);
+    }, 0);
+}
 
-    const table =
-        document.getElementById("transactionTable");
+function getLowStockItems() {
+    return products.filter(product => {
+        const stock = Number(product.stock_count) || 0;
+        return stock > 0 && stock <= 2;
+    }).length;
+}
+
+function displayInventoryTable() {
+    const table = document.getElementById("inventoryTable");
+
+    if (!table) return;
 
     table.innerHTML = "";
 
-    transactions.forEach(transaction => {
+    if (!products || products.length === 0) {
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">No product inventory found.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    products.forEach(product => {
+        const productId = product.product_id;
+        const productName = product.product_name;
+        const price = product.price;
+        const stock = Number(product.stock_count) || 0;
+        const maxCapacity = product.max_capacity ?? 0;
+        const status = getProductStatus(stock);
 
         table.innerHTML += `
             <tr>
-                <td>${transaction.time}</td>
-                <td>${transaction.coin}</td>
-                <td>${transaction.machine}</td>
-                <td>${transaction.status}</td>
+                <td>${productId}</td>
+                <td>${productName}</td>
+                <td>${formatPeso(price)}</td>
+                <td>${stock}</td>
+                <td>${maxCapacity}</td>
+                <td>
+                    <span class="table-status ${getStatusClass(status)}">
+                        ${status}
+                    </span>
+                </td>
+                <td>
+                    <button class="restock-btn" data-id="${productId}">
+                        Restock
+                    </button>
+                </td>
             </tr>
         `;
-
     });
 }
 
-document.getElementById("refreshBtn")
-.addEventListener("click", function () {
+function displayCoinInventory() {
+    const onePeso = Number(coinInventory?.one_peso) || 0;
+    const fivePeso = Number(coinInventory?.five_peso) || 0;
+    const tenPeso = Number(coinInventory?.ten_peso) || 0;
+    const twentyPeso = Number(coinInventory?.twenty_peso) || 0;
 
-    loadDashboardData();
+    const oneTotal = onePeso * 1;
+    const fiveTotal = fivePeso * 5;
+    const tenTotal = tenPeso * 10;
+    const twentyTotal = twentyPeso * 20;
 
-});
+    const totalPieces = onePeso + fivePeso + tenPeso + twentyPeso;
+    const totalValue = oneTotal + fiveTotal + tenTotal + twentyTotal;
+    
+    setText("cashInMachine", formatPeso(totalValue));
+    setText("onePesoCount", `${onePeso} pcs`);
+    setText("onePesoTotal", formatPeso(oneTotal));
 
-loadDashboardData();
+    setText("fivePesoCount", `${fivePeso} pcs`);
+    setText("fivePesoTotal", formatPeso(fiveTotal));
 
-setInterval(loadDashboardData, 5000);
+    setText("tenPesoCount", `${tenPeso} pcs`);
+    setText("tenPesoTotal", formatPeso(tenTotal));
+
+    setText("twentyPesoCount", `${twentyPeso} pcs`);
+    setText("twentyPesoTotal", formatPeso(twentyTotal));
+
+    setText("totalCoinPieces", `${totalPieces} pcs`);
+    setText("totalCoinValue", formatPeso(totalValue));
+}
+
+function displayTransactions() {
+    const table = document.getElementById("allTransactionTable");
+
+    if (!table) return;
+
+    table.innerHTML = "";
+
+    if (!transactions || transactions.length === 0) {
+        table.innerHTML = `
+            <tr>
+                <td colspan="8">No transactions found.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    transactions.forEach(transaction => {
+        const id = transaction.transaction_id;
+        const time = transaction.created_at;
+        const productName = transaction.product_name || "N/A";
+        const quantity = transaction.quantity || 0;
+        const totalAmount = transaction.total_amount || 0;
+        const coinInserted = transaction.coin_inserted || 0;
+        const changeGiven = transaction.change_given || 0;
+        const status = transaction.status || "Success";
+
+        table.innerHTML += `
+            <tr>
+                <td>#TRX${id}</td>
+                <td>${formatTime(time)}</td>
+                <td>${productName}</td>
+                <td>${quantity}</td>
+                <td>${formatPeso(totalAmount)}</td>
+                <td>${formatPeso(coinInserted)}</td>
+                <td>${formatPeso(changeGiven)}</td>
+                <td>
+                    <span class="table-status ${getStatusClass(status)}">
+                        ${status}
+                    </span>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function displayMachineLogs() {
+    const table = document.getElementById("machineLogsTable");
+
+    if (!table) return;
+
+    table.innerHTML = "";
+
+    if (!machineLogs || machineLogs.length === 0) {
+        table.innerHTML = `
+            <tr>
+                <td colspan="4">No machine logs found.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    machineLogs.slice(0, 13).forEach(log => {
+        const logType = log.log_type || "Info";
+
+        table.innerHTML += `
+            <tr>
+                <td>${log.log_id}</td>
+                <td>
+                    <span class="table-status ${getStatusClass(logType)}">
+                        ${logType}
+                    </span>
+                </td>
+                <td>${log.message}</td>
+                <td>${formatTime(log.created_at)}</td>
+            </tr>
+        `;
+    });
+}
+
+async function restockProduct(productId) {
+    try {
+        console.log("Restocking product:", productId);
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/product-inventory/${productId}/restock`,
+            { method: "POST" }
+        );
+
+        const data = await response.json();
+
+        console.log("RESTOCK RESPONSE:", data);
+        console.log("STATUS:", response.status);
+
+        if (!response.ok) {
+            throw new Error(data.message || "Request failed");
+        }
+
+        showSuccessModal("Product has been restocked successfully!", "Restock Complete");
+
+        await loadDashboardData();
+
+    } catch (err) {
+        console.error("RESTOCK ERROR:", err);
+        alert("Restock failed. Check console.");
+    }
+}
 
 function loadChart() {
-    const ctx = document.getElementById("coinChart");
+    const ctx = document.getElementById("revenueChart");
 
-    new Chart(ctx, {
+    if (!ctx) return;
 
+    revenueChart = new Chart(ctx, {
         type: "line",
         data: {
-
-            labels: [
-                "Mon",
-                "Tue",
-                "Wed",
-                "Thu",
-                "Fri",
-                "Sat",
-                "Sun"
-            ],
-
+            labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
             datasets: [
-
                 {
-                    label: "Daily Analytics",
-                    data: [25, 40, 35, 70, 55, 90, 120],
+                    label: "Daily Revenue",
+                    data: [250, 320, 180, 450, 390, 520, 610],
                     borderColor: "#22c55e",
                     backgroundColor: "rgba(34, 197, 94, 0.18)",
                     fill: true,
                     borderWidth: 3,
                     tension: 0.45,
                     pointRadius: 0,
-                    pointHoverRadius: 6
+                    pointHoverRadius: 6,
                 },
-
-                {
-                    label: "Weekly Analytics",
-                    data: [80, 120, 100, 150, 140, 180, 220],
-                    borderColor: "#86efac",
-                    backgroundColor: "rgba(134, 239, 172, 0.15)",
-                    fill: true,
-                    borderWidth: 3,
-                    tension: 0.45,
-                    pointRadius: 0,
-                    pointHoverRadius: 6
-                },
-
-                {
-                    label: "Monthly Analytics",
-                    data: [300, 420, 390, 500, 480, 620, 750],
-                    borderColor: "#16a34a",
-                    backgroundColor: "rgba(22, 163, 74, 0.12)",
-                    fill: true,
-                    borderWidth: 3,
-                    tension: 0.45,
-                    pointRadius: 0,
-                    pointHoverRadius: 6
-                }
-            ]
+            ],
         },
-
         options: {
             responsive: true,
-
             interaction: {
-                mode: 'index',
-                intersect: false
+                mode: "index",
+                intersect: false,
             },
-
-            plugins: {  
-
+            plugins: {
                 legend: {
                     display: true,
-                    position: 'top',
-                    labels: {
-
-                        usePointStyle: true,
-                        pointStyle: 'circle',
-                        padding: 25,
-                        font: {
-                            size: 13,
-                            weight: '600'
-                        }
-                    }
-                }
+                    position: "top",
+                },
             },
-
             scales: {
-
                 y: {
                     beginAtZero: true,
-
-                    grid: {
-                        color: "rgba(0,0,0,0.05)",
-                        drawBorder: false
-                    },
-
                     ticks: {
-                        color: "#94a3b8"
-                    }
+                        callback: function(value) {
+                            return "₱" + value;
+                        },
+                    },
                 },
-
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: "#94a3b8"
-                    }
-                }
-            }
-        }
+            },
+        },
     });
 }
 
-loadChart();
+function showSuccessModal(message = "Success", title = "Success") {
+    const modal = document.getElementById("successModal");
+    const titleEl = document.getElementById("successTitle");
+    const msgEl = document.getElementById("successMessage");
+
+    titleEl.innerText = title;
+    msgEl.innerText = message;
+
+    modal.classList.remove("hidden");
+}
+
+function closeSuccessModal() {
+    document.getElementById("successModal").classList.add("hidden");
+}
+
+function exportLogsToCSV() {
+    if (!machineLogs || machineLogs.length === 0) {
+        alert("No logs to export.");
+        return;
+    }
+
+    const headers = ["Log ID", "Type", "Message", "Time"];
+
+    const rows = machineLogs.map(log => [
+        log.log_id,
+        log.log_type,
+        log.message,
+        log.created_at
+    ]);
+
+    let csvContent = "data:text/csv;charset=utf-8,"
+        + headers.join(",") + "\n"
+        + rows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `machine_logs_${Date.now()}.csv`);
+    document.body.appendChild(link);
+
+    link.click();
+    document.body.removeChild(link);
+}
+
+async function clearLogs() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/machine-logs/clear`, {
+            method: "DELETE"
+        });
+
+        if (!res.ok) throw new Error("Failed");
+
+        await loadDashboardData();
+        alert("Logs cleared.");
+    } catch (err) {
+        console.error(err);
+        alert("Failed to clear logs.");
+    }
+}
+
+document.getElementById("nextTransactionsBtn")?.addEventListener("click", async () => {
+    if (transactionPage < totalTransactionPages) {
+        transactionPage++;
+        await loadDashboardData();
+    }
+});
+
+document.getElementById("prevTransactionsBtn")?.addEventListener("click", async () => {    
+    if (transactionPage > 1) {
+        transactionPage--;
+        await loadDashboardData();
+    }
+});
 
 const navLinks = document.querySelectorAll(".nav-link");
 const sections = document.querySelectorAll(".page-section");
 
 navLinks.forEach(link => {
-    link.addEventListener("click", function (e) {
+    link.addEventListener("click", function(e) {
         e.preventDefault();
 
         navLinks.forEach(nav => nav.classList.remove("active"));
@@ -305,59 +566,98 @@ navLinks.forEach(link => {
     });
 });
 
-document.getElementById("clearBtn").addEventListener("click", function () {
+const clearBtn = document.getElementById("clearBtn");
 
-    document.getElementById("allTransactionTable").innerHTML = "";
+if (clearBtn) {
+    clearBtn.addEventListener("click", function() {
+        alert("Clear should be handled through the database, not only the frontend.");
+    });
+}
 
+const exportBtn = document.getElementById("exportBtn");
+
+if (exportBtn) {
+    exportBtn.addEventListener("click", function() {
+        alert("Export feature coming soon.");
+    });
+}
+
+const saveSettingsBtn = document.getElementById("saveSettingsBtn");
+
+if (saveSettingsBtn) {
+    saveSettingsBtn.addEventListener("click", function() {
+        const machineInput = document.getElementById("machineIdInput");
+        const apiInput = document.getElementById("apiInput");
+
+        if (machineInput) {
+            machineId = machineInput.value || "VM-01";
+        }
+
+        if (apiInput && apiInput.value.trim() !== "") {
+            API_BASE_URL = apiInput.value.trim();
+            WS_URL = API_BASE_URL.replace("http://", "ws://").replace("https://", "wss://");
+        }
+
+        alert("Settings saved. Refresh the page to reconnect with the new API URL.");
+    });
+}
+
+const resetModal = document.getElementById("resetModal");
+const resetBtn = document.getElementById("resetCoinsBtn");
+const cancelBtn = document.getElementById("cancelResetBtn");
+const confirmBtn = document.getElementById("confirmResetBtn");
+
+if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+        resetModal.classList.remove("hidden");
+    });
+}
+
+if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+        resetModal.classList.add("hidden");
+    });
+}
+
+if (confirmBtn) {
+    confirmBtn.addEventListener("click", async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/coin-inventory/reset`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ machineId })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) throw new Error("Reset failed");
+
+            resetModal.classList.add("hidden");
+
+            alert("Coin inventory reset successfully!");
+
+        } catch (err) {
+            console.error(err);
+            alert("Failed to reset coin inventory.");
+        }
+    });
+}
+
+document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".restock-btn");
+    if (!btn) return;
+
+    const productId = btn.dataset.id;
+    await restockProduct(productId);
 });
 
-document.getElementById("exportBtn").addEventListener("click", function () {
-
-    alert("Export feature coming soon.");
-
+document.getElementById("successOkBtn")?.addEventListener("click", () => {
+    closeSuccessModal();
 });
 
-document.getElementById("generateReportBtn").addEventListener("click", function () {
+document.getElementById("exportLogsBtn")?.addEventListener("click", exportLogsToCSV);
 
-    let oneTotal = onePeso * 1;
-    let fiveTotal = fivePeso * 5;
-    let tenTotal = tenPeso * 10;
+document.getElementById("clearLogsBtn")?.addEventListener("click", clearLogs);
 
-    let totalCoins = onePeso + fivePeso + tenPeso;
-    let totalAmount = oneTotal + fiveTotal + tenTotal;
-
-    document.getElementById("reportOnePeso").innerText = onePeso + " pcs";
-    document.getElementById("reportOneTotal").innerText = "₱" + oneTotal;
-
-    document.getElementById("reportFivePeso").innerText = fivePeso + " pcs";
-    document.getElementById("reportFiveTotal").innerText = "₱" + fiveTotal;
-
-    document.getElementById("reportTenPeso").innerText = tenPeso + " pc";
-    document.getElementById("reportTenTotal").innerText = "₱" + tenTotal;
-
-    document.getElementById("reportTotalCoins").innerText = totalCoins + " pcs";
-    document.getElementById("reportTotalAmount").innerText = "₱" + totalAmount;
-
-    let csvContent =
-        "\uFEFFCoin Type,Pieces,Total Value\n" +
-        "PHP 1," + onePeso + "," + oneTotal + "\n" +
-        "PHP 5," + fivePeso + "," + fiveTotal + "\n" +
-        "PHP 10," + tenPeso + "," + tenTotal + "\n" +
-        "Overall Total," + totalCoins + "," + totalAmount;
-
-    let file = new Blob(
-        [csvContent],
-        { type: "text/csv;charset=utf-8;" }
-    );
-
-    let link = document.createElement("a");
-
-    link.href = URL.createObjectURL(file);
-
-    link.download = "vendo_coin_report.csv";
-
-    link.click();
-
-    alert("Report downloaded successfully.");
-
-});
+connectWebSocket();
+loadChart();

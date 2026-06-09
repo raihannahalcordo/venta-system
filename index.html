@@ -1,438 +1,407 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendo Coin Monitoring System</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VentaMachine Dashboard</title>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
+  <div class="dashboard-container">
 
-    <div class="dashboard-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="logo">VentaMachine</div>
 
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <div class="logo">Vendo</div>
+      <nav class="nav-menu">
+        <a href="#" class="nav-link active" data-section="dashboard">Dashboard</a>
+        <a href="#" class="nav-link" data-section="inventory">Product Inventory</a>
+        <a href="#" class="nav-link" data-section="coinInventory">Coin Inventory</a>
+        <a href="#" class="nav-link" data-section="transactions">Transactions</a>
+        <a href="#" class="nav-link" data-section="alerts">Machine Logs</a>
+        <a href="#" class="nav-link" data-section="settings">Settings</a>
+      </nav>
+    </aside>
 
-            <nav class="nav-menu">
-                <a href="#" class="nav-link active" data-section="dashboard">Dashboard</a>
-                <a href="#" class="nav-link" data-section="transactions">Transactions</a>
-                <a href="#" class="nav-link" data-section="coinCounts">Coin Counts</a>
-                <a href="#" class="nav-link" data-section="reports">Reports</a>
-                <a href="#" class="nav-link" data-section="settings">Settings</a>
-            </nav>
-        </aside>
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
 
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
+      <!-- DASHBOARD -->
+      <section class="page-section active-section" id="dashboard">
 
-            <!-- TOP BAR -->
-            <header class="topbar">
-                <div>
-                    <h1>Dashboard</h1>
-                    <p>Vendo Coin Monitoring System</p>
+        <section class="summary-cards">
+
+          <!-- ROW 1 (FULL WIDTH) -->
+          <div class="card stat-card wide-money-card">
+            <div class="money-split">
+              <div class="money-box">
+                <div class="card-icon green">
+                  <i class="fa-solid fa-coins"></i>
                 </div>
-
-                <div class="status">
-                    <span class="status-dot"></span>
-                    VENDO-01 Online
+                <div class="stat-info">
+                    <p>Cash in Machine</p>
+                    <h2 id="cashInMachine">₱0</h2>
                 </div>
-            </header>
+              </div>
 
-            <div class="page-section active-section" id="dashboard">
-                <section class="summary-cards">
-                    <div class="card stat-card">
-                        <div class="stat-content">
-                            <div class="card-icon green">
-                                <i class="fa-solid fa-peso-sign"></i>
-                            </div>
+              <div class="money-divider"></div>
 
-                            <div class="stat-info">
-                                <p>Total Amount</p>
-                                <h2 id="totalAmount">₱25</h2>
-                            </div>
-
-                        </div>
-
-                        <span class="change up">
-                            <i class="fa-solid fa-arrow-trend-up"></i>
-                            +12% from last week
-                        </span>
-
-                    </div>
-
-                    <div class="card stat-card">
-                        <div class="stat-content">
-                            <div class="card-icon blue">
-                                <i class="fa-solid fa-coins"></i>
-                            </div>
-
-                            <div class="stat-info">
-                                <p>Total Coins</p>
-                                <h2 id="totalCoins">8</h2>
-                            </div>
-                        </div>
-
-                        <span class="change up">
-                            <i class="fa-solid fa-arrow-trend-up"></i>
-                            +5% from last week
-                        </span>
-                    </div>
-
-                    <div class="card stat-card">
-                        <div class="stat-content">
-                            <div class="card-icon orange">
-                                <i class="fa-solid fa-wifi"></i>
-                            </div>
-
-                            <div class="stat-info">
-                                <p>Machine Status</p>
-                                <h2 id="machineStatus">
-                                    <span class="machine-dot online"></span>
-                                    Online
-                                </h2>
-                            </div>
-                        </div>
-
-                        <span class="change up">
-                            <i class="fa-solid fa-circle-check"></i>
-                            System connected
-                        </span>
-                    </div>
-
-                    <div class="card stat-card">
-                        <div class="stat-content">
-                            <div class="card-icon purple">
-                                <i class="fa-solid fa-clock"></i>
-                            </div>
-
-                            <div class="stat-info">
-                                <p>Last Updated</p>
-                                <h2 id="lastUpdated">10:30</h2>
-                            </div>
-                        </div>
-
-                        <span class="change up">
-                            <i class="fa-solid fa-rotate"></i>
-                            Recently synced
-                        </span>
-                    </div>
-                </section>
-
-                <section class="coin-cards">
-
-                    <!-- ₱1 CARD -->
-                    <div class="card stat-card">
-
-                        <div class="stat-content">
-
-                            <div class="card-icon green">
-                                <i class="fa-solid fa-circle-dollar-to-slot"></i>
-                            </div>
-
-                            <div class="stat-info">
-                                <p>₱1 Coins</p>
-                                <h2 id="onePesoCount">5</h2>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <!-- ₱5 CARD -->
-                    <div class="card stat-card">
-
-                        <div class="stat-content">
-
-                            <div class="card-icon blue">
-                                <i class="fa-solid fa-circle-dollar-to-slot"></i>
-                            </div>
-
-                            <div class="stat-info">
-                                <p>₱5 Coins</p>
-                                <h2 id="fivePesoCount">2</h2>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <!-- ₱10 CARD -->
-                    <div class="card stat-card">
-
-                        <div class="stat-content">
-
-                            <div class="card-icon orange">
-                                <i class="fa-solid fa-circle-dollar-to-slot"></i>
-                            </div>
-
-                            <div class="stat-info">
-                                <p>₱10 Coins</p>
-                                <h2 id="tenPesoCount">1</h2>
-                            </div>
-
-                        </div>
-                    </div>
-                </section>
-
-                <section class="analytics-section">
-                    <div class="section-header">
-                        <h2>Coin Collection Analytics</h2>
-                    </div>
-                    <canvas id="coinChart" height="55"></canvas>
-                </section>
-
-                <!-- RECENT TRANSACTIONS -->
-                <section class="transactions-section">
-                    <div class="section-header">
-                        <h2>Recent Transactions</h2>
-                        <button id="refreshBtn">Refresh</button>
-                    </div>
-
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Coin</th>
-                                <th>Machine ID</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="transactionTable">
-                            <tr>
-                                <td>10:30 AM</td>
-                                <td>₱10</td>
-                                <td>VENDO-01</td>
-                                <td>Success</td>
-                            </tr>
-                            <tr>
-                                <td>10:28 AM</td>
-                                <td>₱5</td>
-                                <td>VENDO-01</td>
-                                <td>Success</td>
-                            </tr>
-                            <tr>
-                                <td>10:25 AM</td>
-                                <td>₱1</td>
-                                <td>VENDO-01</td>
-                                <td>Success</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </section>
+              <div class="money-box">
+                <div class="card-icon blue">
+                  <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div class="stat-info">
+                  <p>Total Sales</p>
+                  <h2 id="totalRevenue">₱0</h2>
+                </div>
+              </div>
             </div>
 
-            <section class="page-section" id="transactions">
+            <span class="change up">Cash box and sales summary</span>
+          </div>
 
-    <div class="transactions-section">
 
-        <div class="section-header">
+            <!-- ROW 2 -->
+            <div class="summary-row row-2">
 
+              <div class="card stat-card">
+                <div class="stat-content">
+                  <div class="card-icon orange">
+                    <i class="fa-solid fa-wifi"></i>
+                  </div>
+                  <div class="stat-info">
+                    <p>Machine Status</p>
+                    <h2 id="machineStatus">
+                      <span class="machine-dot online"></span>
+                      Online
+                    </h2>
+                  </div>
+                </div>
+                <span class="change up" id="machineStatusNote">
+                  System connected
+                </span>
+              </div>
+
+              <div class="card stat-card">
+                <div class="stat-content">
+                  <div class="card-icon purple">
+                    <i class="fa-solid fa-clock"></i>
+                  </div>
+                  <div class="stat-info">
+                    <p>Last Sync</p>
+                    <h2 id="lastUpdated">No update</h2>
+                  </div>
+                </div>
+                <span class="change up">Recently updated</span>
+              </div>
+
+            </div>
+
+            <!-- ROW 3 -->
+            <div class="summary-row row-3">
+
+              <div class="card stat-card">
+                <div class="stat-content">
+                  <div class="card-icon blue">
+                    <i class="fa-solid fa-receipt"></i>
+                  </div>
+                  <div class="stat-info">
+                    <p>Total Transactions</p>
+                    <h2 id="totalTransactions">0</h2>
+                  </div>
+                </div>
+                <span class="change up" id="transactionNote">
+                  Successful sales recorded
+                </span>
+              </div>
+            
+
+              <div class="card stat-card">
+                <div class="stat-content">
+                  <div class="card-icon green">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                  </div>
+                  <div class="stat-info">
+                    <p>Products Remaining</p>
+                    <h2 id="productsRemaining">0</h2>
+                  </div>
+                </div>
+                <span class="change up" id="productTypesNote">
+                  Product inventory
+                </span>
+              </div>
+
+              <div class="card stat-card">
+                <div class="stat-content">
+                  <div class="card-icon orange">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                  </div>
+                  <div class="stat-info">
+                    <p>Low Stock Items</p>
+                    <h2 id="lowStockItems">0</h2>
+                  </div>
+                </div>
+                <span class="change down">Needs restocking</span>
+              </div>
+
+            </div>
+
+        </section>
+
+        <section class="analytics-section">
+          <div class="section-header">
+            <h2>Revenue Analytics</h2>
+          </div>
+          <canvas id="revenueChart" height="55"></canvas>
+        </section>
+
+      </section>
+
+      <!-- PRODUCT INVENTORY -->
+      <section class="page-section" id="inventory">
+        <div class="transactions-section">
+          <div class="section-header">
             <div>
-                <h2>All Transactions</h2>
-                <p>View complete coin insertion records</p>
+              <h2>Product Inventory</h2>
+              <p>Monitor and update available product stocks</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Product ID</th>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Max Capacity</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+
+            <tbody id="inventoryTable">
+              <tr>
+                <td colspan="7">Loading product inventory...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- COIN INVENTORY -->
+      <section class="page-section" id="coinInventory">
+        <div class="transactions-section">
+          <div class="section-header">
+            <div>
+              <h2>Coin Inventory</h2>
+              <p>Monitor coin counts and total cash inside the machine</p>
+            </div>
+
+            <div class="coin-actions">
+              <button id="resetCoinsBtn">
+                <i class="fa-solid fa-rotate"></i>
+                Reset Coin Inventory
+              </button>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Coin Type</th>
+                <th>Pieces</th>
+                <th>Total Value</th>
+              </tr>
+            </thead>
+
+            <tbody id="coinInventoryTable">
+              <tr>
+                <td>₱1</td>
+                <td id="onePesoCount">0 pcs</td>
+                <td id="onePesoTotal">₱0</td>
+              </tr>
+              <tr>
+                <td>₱5</td>
+                <td id="fivePesoCount">0 pcs</td>
+                <td id="fivePesoTotal">₱0</td>
+              </tr>
+              <tr>
+                <td>₱10</td>
+                <td id="tenPesoCount">0 pcs</td>
+                <td id="tenPesoTotal">₱0</td>
+              </tr>
+              <tr>
+                <td>₱20</td>
+                <td id="twentyPesoCount">0 pcs</td>
+                <td id="twentyPesoTotal">₱0</td>
+              </tr>
+              <tr>
+                <td><strong>Overall Total</strong></td>
+                <td id="totalCoinPieces"><strong>0 pcs</strong></td>
+                <td id="totalCoinValue"><strong>₱0</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TRANSACTIONS -->
+      <section class="page-section" id="transactions">
+        <div class="transactions-section">
+          <div class="section-header">
+            <div>
+              <h2>Transactions</h2>
+              <p>View product sales and payment records</p>
             </div>
 
             <div class="transaction-actions">
-                <button id="exportBtn">
-                    <i class="fa-solid fa-file-export"></i>
-                    Export
-                </button>
-                <button id="clearBtn">
-                    <i class="fa-solid fa-trash"></i>
-                    Clear
-                </button>
+              <button id="exportBtn">
+                <i class="fa-solid fa-file-export"></i>
+                Export
+              </button>
+              <button id="clearBtn">
+                <i class="fa-solid fa-trash"></i>
+                Clear
+              </button>
             </div>
-        </div>
+          </div>
 
-        <table>
-
+          <table>
             <thead>
-                <tr>
-                    <th>Transaction ID</th>
-                    <th>Time</th>
-                    <th>Coin</th>
-                    <th>Machine ID</th>
-                    <th>Status</th>
-                </tr>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Time</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Total Amount</th>
+                <th>Coin Inserted</th>
+                <th>Change</th>
+                <th>Status</th>
+              </tr>
             </thead>
 
             <tbody id="allTransactionTable">
-
-                <tr>
-                    <td>#TRX001</td>
-                    <td>10:30 AM</td>
-                    <td>₱10</td>
-                    <td>VENDO-01</td>
-                    <td>
-                        <span class="table-status success">
-                            Success
-                        </span>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>#TRX002</td>
-                    <td>10:28 AM</td>
-                    <td>₱5</td>
-                    <td>VENDO-01</td>
-                    <td>
-                        <span class="table-status success">
-                            Success
-                        </span>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>#TRX003</td>
-                    <td>10:25 AM</td>
-                    <td>₱1</td>
-                    <td>VENDO-01</td>
-                    <td>
-                        <span class="table-status success">
-                            Success
-                        </span>
-                    </td>
-                </tr>
-
+              <tr>
+                <td colspan="8">Loading transactions...</td>
+              </tr>
             </tbody>
+          </table>
 
-        </table>
+          <div class="pagination-controls" id="transactionPagination">
+            <button id="prevTransactionsBtn">← Prev</button>
 
-    </div>
+            <div id="transactionPageNumbers" class="page-numbers"></div>
 
-</section>
-
-            <section class="page-section" id="coinCounts">
-    <div class="transactions-section">
-        <div class="section-header">
-            <div>
-                <h2>Coin Counts</h2>
-                <p>Detailed count per coin denomination</p>
-            </div>
+            <button id="nextTransactionsBtn">Next →</button>
+          </div>
         </div>
+      </section>
 
-        <section class="coin-cards">
-            <div class="card stat-card">
-                <div class="stat-content">
-                    <div class="card-icon green">
-                        <i class="fa-solid fa-circle-dollar-to-slot"></i>
-                    </div>
-                    <div class="stat-info">
-                        <p>₱1 Coins</p>
-                        <h2 id="coinPageOnePeso">5</h2>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card stat-card">
-                <div class="stat-content">
-                    <div class="card-icon blue">
-                        <i class="fa-solid fa-circle-dollar-to-slot"></i>
-                    </div>
-                    <div class="stat-info">
-                        <p>₱5 Coins</p>
-                        <h2 id="coinPageFivePeso">2</h2>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card stat-card">
-                <div class="stat-content">
-                    <div class="card-icon orange">
-                        <i class="fa-solid fa-circle-dollar-to-slot"></i>
-                    </div>
-                    <div class="stat-info">
-                        <p>₱10 Coins</p>
-                        <h2 id="coinPageTenPeso">1</h2>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
-</section>
-
-<section class="page-section" id="reports">
-    <div class="transactions-section">
-        <div class="section-header">
+      <!-- MACHINE LOGS -->
+      <section class="page-section" id="alerts">
+        <div class="transactions-section">
+          <div class="section-header">
             <div>
-                <h2>Reports</h2>
-                <p>Summary report of collected coins</p>
+              <h2>Machine Logs</h2>
+              <p>System messages, warnings, and machine activity records</p>
             </div>
 
-            <button id="generateReportBtn">
-                <i class="fa-solid fa-file-lines"></i>
-                Generate Report
-            </button>
-        </div>
+            <div class="transaction-actions">
+              <button id="exportLogsBtn">
+                <i class="fa-solid fa-file-export"></i>
+                Export
+              </button>
 
-        <table>
+              <button id="clearLogsBtn">
+                <i class="fa-solid fa-trash"></i>
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <table>
             <thead>
-                <tr>
-                    <th>Coin Type</th>
-                    <th>Pieces</th>
-                    <th>Total Value</th>
-                </tr>
+              <tr>
+                <th>Log ID</th>
+                <th>Type</th>
+                <th>Message</th>
+                <th>Time</th>
+              </tr>
             </thead>
 
-            <tbody>
-                <tr>
-                    <td>₱1</td>
-                    <td id="reportOnePeso">5 pcs</td>
-                    <td id="reportOneTotal">₱5</td>
-                </tr>
-                <tr>
-                    <td>₱5</td>
-                    <td id="reportFivePeso">2 pcs</td>
-                    <td id="reportFiveTotal">₱10</td>
-                </tr>
-                <tr>
-                    <td>₱10</td>
-                    <td id="reportTenPeso">1 pc</td>
-                    <td id="reportTenTotal">₱10</td>
-                </tr>
-                <tr>
-                    <td><strong>Overall Total</strong></td>
-                    <td id="reportTotalCoins"><strong>8 pcs</strong></td>
-                    <td id="reportTotalAmount"><strong>₱25</strong></td>
-                </tr>
+            <tbody id="machineLogsTable">
+              <tr>
+                <td colspan="4">Loading machine logs...</td>
+              </tr>
             </tbody>
-        </table>
-    </div>
-</section>
-    
-        <section class="page-section" id="settings">
-            <div class="transactions-section">
-                <div class="section-header">
-                    <div>
-                        <h2>Settings</h2>
-                        <p>Manage machine and API settings</p>
-                    </div>
-                </div>
+          </table>
+        </div>
+      </section>
 
-                <div class="settings-grid">
-                    <div class="setting-item">
-                        <label>Machine ID</label>
-                        <input type="text" id="machineIdInput" value="VENDO-01">
-                    </div>
-
-                    <div class="setting-item">
-                        <label>API Endpoint</label>
-                        <input type="text" id="apiInput" placeholder="https://your-api.com/data">
-                    </div>
-
-                    <button id="saveSettingsBtn">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        Save Settings
-                    </button>
-                </div>
+      <!-- SETTINGS -->
+      <section class="page-section" id="settings">
+        <div class="transactions-section">
+          <div class="section-header">
+            <div>
+              <h2>Settings</h2>
+              <p>Manage local dashboard and server settings</p>
             </div>
-        </section>
-        </main>
-    </div>
+          </div>
 
-    <script type="module" src="script.js"></script>
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label>Machine ID</label>
+              <input type="text" id="machineIdInput" value="VM-01">
+            </div>
+
+            <div class="setting-item">
+              <label>API Server URL</label>
+              <input type="text" id="apiInput" value="http://localhost:3000">
+            </div>
+
+            <button id="saveSettingsBtn">
+              <i class="fa-solid fa-floppy-disk"></i>
+              Save Settings
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- RESET CONFIRM MODAL -->
+  <div id="resetModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Confirm Reset</h2>
+      <p>
+        Are you sure you want to reset the coin inventory?  
+        <br><br>
+        <strong>This action will set all coin counts to zero and cannot be undone.</strong>
+      </p>
+
+      <div class="modal-actions">
+        <button id="cancelResetBtn" class="btn-cancel">Cancel</button>
+        <button id="confirmResetBtn" class="btn-danger">Yes, Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="successModal" class="success-modal hidden">
+    <div class="success-box">
+      <i class="fa-solid fa-circle-check"></i>
+      <h2 id="successTitle">Success</h2>
+      <p id="successMessage">Restock completed successfully.</p>
+      <button id="successOkBtn">OK</button>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
 </body>
-</html>
+</html>>
