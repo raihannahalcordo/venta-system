@@ -769,3 +769,79 @@ button:hover {
     outline: none;
     border-bottom: 2px solid #6366f1;
 }
+
+.coin-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+}
+
+.coin-card {
+    background: #ffffff;
+    border: 1px solid #eef1f2;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
+    transition: 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.coin-card:hover {
+    transform: translateY(-2px);
+}
+
+.coin-card h3 {
+    font-size: 18px;
+    color: #7a8a8f;
+    margin-bottom: 18px;
+}
+
+.coin-card .count {
+    font-size: 34px;
+    font-weight: 700;
+    color: #2a353b;
+}
+
+.coin-card .value {
+    margin-top: 10px;
+    font-size: 16px;
+    color: #00a86b;
+    font-weight: 600;
+}
+
+.coin-summary-card {
+    margin-top: 22px;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 25px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.04);
+}
+
+.coin-summary-card h2 {
+    margin-bottom: 20px;
+    font-size: 20px;
+}
+
+.coin-summary-card .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid #eef1f2;
+}
+
+.coin-summary-card .summary-row:first-of-type {
+    border-top: none;
+}
+
+.coin-summary-card strong {
+    color: #00a86b;
+}
+
+@media (max-width: 768px) {
+    .coin-grid {
+        grid-template-columns: 1fr;
+    }
+}

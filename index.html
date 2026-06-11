@@ -216,44 +216,48 @@
               </button>
             </div>
           </div>
+        </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Coin Type</th>
-                <th>Pieces</th>
-                <th>Total Value</th>
-              </tr>
-            </thead>
+        <div class="coin-grid">
 
-            <tbody id="coinInventoryTable">
-              <tr>
-                <td>₱1</td>
-                <td id="onePesoCount">0 pcs</td>
-                <td id="onePesoTotal">₱0</td>
-              </tr>
-              <tr>
-                <td>₱5</td>
-                <td id="fivePesoCount">0 pcs</td>
-                <td id="fivePesoTotal">₱0</td>
-              </tr>
-              <tr>
-                <td>₱10</td>
-                <td id="tenPesoCount">0 pcs</td>
-                <td id="tenPesoTotal">₱0</td>
-              </tr>
-              <tr>
-                <td>₱20</td>
-                <td id="twentyPesoCount">0 pcs</td>
-                <td id="twentyPesoTotal">₱0</td>
-              </tr>
-              <tr>
-                <td><strong>Overall Total</strong></td>
-                <td id="totalCoinPieces"><strong>0 pcs</strong></td>
-                <td id="totalCoinValue"><strong>₱0</strong></td>
-              </tr>
-            </tbody>
-          </table>
+            <div class="coin-card">
+                <h3>1 Peso Coins</h3>
+                <div class="count" id="onePesoCount">0 pcs</div>
+                <div class="value" id="onePesoTotal">₱0</div>
+            </div>
+
+            <div class="coin-card">
+                <h3>5 Peso Coins</h3>
+                <div class="count" id="fivePesoCount">0 pcs</div>
+                <div class="value" id="fivePesoTotal">₱0</div>
+            </div>
+
+            <div class="coin-card">
+                <h3>10 Peso Coins</h3>
+                <div class="count" id="tenPesoCount">0 pcs</div>
+                <div class="value" id="tenPesoTotal">₱0</div>
+            </div>
+
+            <div class="coin-card">
+                <h3>20 Peso Coins</h3>
+                <div class="count" id="twentyPesoCount">0 pcs</div>
+                <div class="value" id="twentyPesoTotal">₱0</div>
+            </div>
+
+        </div>
+
+        <div class="coin-summary-card">
+            <h2>Total Cash in Machine</h2>
+
+            <div class="summary-row">
+                <span>Total Coins</span>
+                <strong id="totalCoinPieces">0 pcs</strong>
+            </div>
+
+            <div class="summary-row">
+                <span>Total Value</span>
+                <strong id="totalCoinValue">₱0</strong>
+            </div>
         </div>
       </section>
 

@@ -22,13 +22,6 @@ const db = new Pool({
 });
 
 // =========================
-// TIME FORMAT
-// =========================
-function philippineTime(columnName, aliasName) {
-  return `TO_CHAR(${columnName} + INTERVAL '8 hours', 'Mon DD, YYYY, HH12:MI:SS AM') AS ${aliasName}`;
-}
-
-// =========================
 // WEBSOCKET BROADCAST
 // =========================
 function broadcast(data) {
@@ -83,7 +76,7 @@ async function getProductInventory() {
       i.inventory_id,
       i.stock_count,
       i.max_capacity,
-      ${philippineTime("i.updated_at", "updated_at")}
+      i.updated_at
     FROM products p
     LEFT JOIN inventory i ON p.product_id = i.product_id
     ORDER BY p.product_id
@@ -106,7 +99,7 @@ async function getTransactions(page = 1, limit = 13) {
       t.coin_inserted,
       t.change_given,
       t.status,
-      ${philippineTime("t.created_at", "created_at")}
+      t.created_at
     FROM transactions t
     LEFT JOIN products p ON t.product_id = p.product_id
     ORDER BY t.created_at DESC
@@ -126,7 +119,7 @@ async function getCoinInventory() {
       five_peso,
       ten_peso,
       twenty_peso,
-      ${philippineTime("updated_at", "updated_at")}
+      updated_at
     FROM coin_inventory
     WHERE id = 1
   `);
@@ -140,7 +133,7 @@ async function getMachineLogs(limit = 13) {
       log_id,
       log_type,
       message,
-      ${philippineTime("created_at", "created_at")}
+      created_at
     FROM machine_logs
     ORDER BY created_at DESC
     LIMIT $1
@@ -163,21 +156,23 @@ async function getSummary() {
       COALESCE(SUM(stock_count), 0) AS products_remaining,
       COUNT(*) FILTER (WHERE stock_count > 0 AND stock_count <= 2) AS low_stock_items,
       COUNT(*) AS product_types,
-      TO_CHAR(MAX(updated_at) AT TIME ZONE 'Asia/Manila', 'Mon DD, YYYY, HH12:MI:SS AM') AS last_inventory_update
+      MAX(updated_at) AS last_inventory_update
     FROM inventory
   `);
 
   const coinResult = await db.query(`
     SELECT 
-      TO_CHAR(updated_at AT TIME ZONE 'Asia/Manila', 'Mon DD, YYYY, HH12:MI:SS AM') AS updated_at
+      updated_at
     FROM coin_inventory
     WHERE id = 1
   `);
 
   const transactionUpdateResult = await db.query(`
     SELECT 
-      TO_CHAR(MAX(created_at) AT TIME ZONE 'Asia/Manila', 'Mon DD, YYYY, HH12:MI:SS AM') AS last_transaction_update
-    FROM transactions
+      t.created_at
+    FROM transactions t
+    ORDER BY t.created_at DESC
+    LIMIT 1
   `);
 
   return {
@@ -205,9 +200,7 @@ wss.on("connection", async (ws) => {
     ws.send(JSON.stringify({ type: "summary", payload: await getSummary() }));
     ws.send(JSON.stringify({ type: "productInventory", payload: await getProductInventory() }));
     ws.send(JSON.stringify({ type: "coinInventory", payload: await getCoinInventory() }));
-
-    // ⚠️ transactions loaded ONLY ON DEMAND (API)
-    ws.send(JSON.stringify({ type: "transactions", payload: null }));
+    ws.send(JSON.stringify({ type: "transactions", payload: await getTransactions() }));
 
     ws.send(JSON.stringify({ type: "machineLogs", payload: await getMachineLogs() }));
   } catch (err) {
@@ -305,8 +298,13 @@ app.post("/api/transaction", async (req, res) => {
     });
 
     broadcast({
-      type: "newLog",
-      payload: logResult.rows[0]
+      type: "machineLogs",
+      payload: await getMachineLogs()
+    });
+
+    broadcast({
+      type: "transactions",
+      payload: await getTransactions()
     });
 
     res.json({
@@ -355,8 +353,8 @@ app.post("/api/coin-insert", async (req, res) => {
     });
 
     broadcast({
-      type: "newLog",
-      payload: logResult.rows[0]
+      type: "machineLogs",
+      payload: await getMachineLogs()
     });
 
     res.json({ success: true });

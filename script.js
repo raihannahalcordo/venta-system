@@ -147,7 +147,21 @@ function formatPeso(value) {
 }
 
 function formatTime(value) {
-    return value || "No update";
+    if (!value) return "No update";
+
+    const date = new Date(value);
+
+    date.setHours(date.getHours() + 8);
+
+    return date.toLocaleString("en-PH", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+    });
 }
 
 function setText(id, value) {
@@ -161,12 +175,13 @@ function setText(id, value) {
 function updateDashboard() {
     const status = summary.machineStatus ?? "Offline";
     const isOnline = String(status).toLowerCase() === "online";
+    const lastLogTime = machineLogs?.[0]?.created_at;
 
     setText("totalRevenue", formatPeso(summary.totalRevenue ?? summary.total_revenue));
     setText("totalTransactions", summary.totalTransactions ?? summary.total_transactions ?? transactions.length);
     setText("productsRemaining", summary.productsRemaining ?? summary.products_remaining ?? getProductsRemaining());
     setText("lowStockItems", summary.lowStockItems ?? summary.low_stock_items ?? getLowStockItems());
-    setText("lastUpdated", formatTime(summary.lastUpdated ?? summary.last_updated));
+    setText("lastUpdated", formatTime(lastLogTime));
 
     const machineStatusElement = document.getElementById("machineStatus");
 
