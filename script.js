@@ -250,6 +250,20 @@ function displayInventoryTable() {
             ? `<input type="number" class="edit-max" data-id="${productId}" value="${maxCapacity}" />`
             : maxCapacity + (product.is_active === false ? ' 🔒' : '');
 
+        const actionButtons = product.is_active === false
+            ? `<button class="reactivate-btn" data-id="${productId}">
+                Reactivate
+            </button>`
+            : `
+                <button class="restock-btn" data-id="${productId}">
+                    Restock
+                </button>
+
+                <button class="deactivate-btn btn-danger" data-id="${productId}">
+                    Deactivate
+                </button>
+            `;
+
         table.innerHTML += `
             <tr>
                 <td>${productId}</td>
@@ -263,23 +277,7 @@ function displayInventoryTable() {
                     </span>
                 </td>
                 <td>
-                    ${
-                        product.is_active === false
-                        ? `
-                            <button class="reactivate-btn" data-id="${productId}">
-                                Reactivate
-                            </button>
-                        `
-                        : `
-                            <button class="restock-btn" data-id="${productId}">
-                                Restock
-                            </button>
-
-                            <button class="deactivate-btn" data-id="${productId}">
-                                Deactivate
-                            </button>
-                        `
-                    }
+                    ${actionButtons}
                 </td>
             </tr>
         `;
@@ -679,17 +677,16 @@ document.addEventListener("click", async (e) => {
         return;
     }
 
-    // DELETE
-    const deleteBtn = e.target.closest(".delete-btn");
-    if (deleteBtn) {
+    // DEACTIVATE
+    const deactivateBtn = e.target.closest(".deactivate-btn");
+    if (deactivateBtn) {
+        const productId = deactivateBtn.dataset.id;
 
-        const productId = deleteBtn.dataset.id;
-
-        const confirmDelete = confirm(
-            "Are you sure you want to delete this product?"
+        const confirmDeactivate = confirm(
+            "Are you sure you want to deactivate this product?"
         );
 
-        if (!confirmDelete) return;
+        if (!confirmDeactivate) return;
 
         try {
             const res = await fetch(
@@ -700,19 +697,41 @@ document.addEventListener("click", async (e) => {
             );
 
             const data = await res.json();
-
             if (!data.success) throw new Error();
 
             showSuccessModal(
-                "Product deleted successfully",
-                "Deleted"
+                "Product deactivated successfully",
+                "Deactivated"
             );
 
             await loadDashboardData();
 
         } catch (err) {
             console.error(err);
-            alert("Failed to delete product.");
+            alert("Failed to deactivate product.");
+        }
+
+        return;
+    }
+
+    const reactivateBtn = e.target.closest(".reactivate-btn");
+    if (reactivateBtn) {
+        const productId = reactivateBtn.dataset.id;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/products/${productId}/reactivate`, {
+                method: "POST"
+            });
+
+            const data = await res.json();
+            if (!data.success) throw new Error();
+
+            showSuccessModal("Product reactivated successfully", "Reactivated");
+
+            await loadDashboardData();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to reactivate product.");
         }
 
         return;

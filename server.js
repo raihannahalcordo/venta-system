@@ -278,6 +278,102 @@ app.delete("/api/products/:id", async (req, res) => {
     }
 });
 
+app.post("/api/products/:id/reactivate", async (req, res) => {
+    const client = await db.connect();
+
+    try {
+        const productId = req.params.id;
+
+        await client.query(`
+            UPDATE products
+            SET is_active = TRUE
+            WHERE product_id = $1
+        `, [productId]);
+
+        await client.query(`
+            INSERT INTO machine_logs (log_type, message)
+            VALUES ($1, $2)
+        `, [
+            "Reactivate",
+            `Product ID ${productId} was reactivated`
+        ]);
+
+        broadcast({
+            type: "productInventory",
+            payload: await getProductInventory()
+        });
+
+        broadcast({
+            type: "machineLogs",
+            payload: await getMachineLogs()
+        });
+
+        broadcast({
+            type: "summary",
+            payload: await getSummary()
+        });
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false });
+    } finally {
+        client.release();
+    }
+});
+
+app.post("/api/products/:id/reactivate", async (req, res) => {
+    const client = await db.connect();
+
+    try {
+        const productId = req.params.id;
+
+        await client.query(`
+            UPDATE products
+            SET is_active = TRUE
+            WHERE product_id = $1
+        `, [productId]);
+
+        await client.query(`
+            UPDATE inventory
+            SET updated_at = NOW()
+            WHERE product_id = $1
+        `, [productId]);
+
+        await client.query(`
+            INSERT INTO machine_logs (log_type, message)
+            VALUES ($1, $2)
+        `, [
+            "Reactivate",
+            `Product ID ${productId} was reactivated`
+        ]);
+
+        broadcast({
+            type: "productInventory",
+            payload: await getProductInventory()
+        });
+
+        broadcast({
+            type: "machineLogs",
+            payload: await getMachineLogs()
+        });
+
+        broadcast({
+            type: "summary",
+            payload: await getSummary()
+        });
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error("REACTIVATE ERROR:", err);
+        res.status(500).json({ success: false });
+    } finally {
+        client.release();
+    }
+});
+
 app.get("/api/coin-inventory", async (req, res) => {
   res.json(await getCoinInventory());
 });
