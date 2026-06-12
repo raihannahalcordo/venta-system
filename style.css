@@ -713,6 +713,20 @@ button:hover {
     background: #16a34a;
 }
 
+.delete-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.delete-btn:hover {
+    background: #dc2626;
+}
+
 #inventoryTable .edit-name {
     width: 120px;
 }
@@ -844,4 +858,48 @@ button:hover {
     .coin-grid {
         grid-template-columns: 1fr;
     }
+}
+
+.btn-add {
+    background: #2563eb;
+}
+
+.btn-add:hover {
+    background: #1d4ed8;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.add-product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.add-product-form input {
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.inactive-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2a353b;
+    margin-right: 10px;
+}
+
+.inactive-toggle input {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
 }

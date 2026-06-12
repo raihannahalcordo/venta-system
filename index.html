@@ -171,10 +171,22 @@
               <p>Monitor and update available product stocks</p>
             </div>
             <div class="transaction-actions">
+
+              <label class="inactive-toggle">
+                <input type="checkbox" id="showInactiveProducts">
+                Show Deactivated Products
+              </label>
+
+              <button id="addProductBtn" class="btn-add">
+                <i class="fa-solid fa-plus"></i>
+                Add Product
+              </button>
+
               <button id="editInventoryBtn">
                 <i class="fa-solid fa-pen-to-square"></i>
                 Edit Inventory
               </button>
+
             </div>
           </div>
 
@@ -187,7 +199,7 @@
                 <th>Stock</th>
                 <th>Max Capacity</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th>Actions</th>
               </tr>
             </thead>
 
@@ -402,6 +414,52 @@
       <h2 id="successTitle">Success</h2>
       <p id="successMessage">Restock completed successfully.</p>
       <button id="successOkBtn">OK</button>
+    </div>
+  </div>
+
+  <div id="addProductModal" class="modal hidden">
+    <div class="modal-content">
+
+      <h2>Add Product</h2>
+
+      <div class="add-product-form">
+
+        <input
+          type="text"
+          id="newProductName"
+          placeholder="Product Name"
+        >
+
+        <input
+          type="number"
+          id="newProductPrice"
+          placeholder="Price"
+        >
+
+        <input
+          type="number"
+          id="newProductStock"
+          placeholder="Stock Count"
+        >
+
+        <input
+          type="number"
+          id="newProductMax"
+          placeholder="Max Capacity"
+        >
+
+      </div>
+
+      <div class="modal-actions">
+        <button id="cancelAddProductBtn" class="btn-cancel">
+          Cancel
+        </button>
+
+        <button id="confirmAddProductBtn">
+          Add Product
+        </button>
+      </div>
+
     </div>
   </div>
 

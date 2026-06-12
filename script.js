@@ -2,6 +2,7 @@ let API_BASE_URL = "http://localhost:3000";
 let WS_URL = "ws://localhost:3000";
 
 let machineId = "VM-01";
+let showInactiveProducts = false;
 
 let summary = {
     totalRevenue: 0,
@@ -217,7 +218,7 @@ function displayInventoryTable() {
 
     table.innerHTML = "";
 
-    products.forEach(product => {
+    products.filter(product => {if (showInactiveProducts) return true;return product.is_active !== false;}).forEach(product => {
         const productId = product.product_id;
         const productName = product.product_name;
         const price = Number(product.price) || 0;
@@ -254,9 +255,17 @@ function displayInventoryTable() {
                     </span>
                 </td>
                 <td>
-                    <button class="restock-btn" data-id="${productId}">
-                        Restock
-                    </button>
+                    <div class="action-buttons">
+
+                        <button class="restock-btn" data-id="${productId}">
+                            Restock
+                        </button>
+
+                        <button class="delete-btn" data-id="${productId}">
+                            Deactivate
+                        </button>
+
+                    </div>
                 </td>
             </tr>
         `;
@@ -647,11 +656,53 @@ if (confirmBtn) {
 }
 
 document.addEventListener("click", async (e) => {
-    const btn = e.target.closest(".restock-btn");
-    if (!btn) return;
 
-    const productId = btn.dataset.id;
-    await restockProduct(productId);
+    // RESTOCK
+    const restockBtn = e.target.closest(".restock-btn");
+    if (restockBtn) {
+        const productId = restockBtn.dataset.id;
+        await restockProduct(productId);
+        return;
+    }
+
+    // DELETE
+    const deleteBtn = e.target.closest(".delete-btn");
+    if (deleteBtn) {
+
+        const productId = deleteBtn.dataset.id;
+
+        const confirmDelete = confirm(
+            "Are you sure you want to delete this product?"
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+            const res = await fetch(
+                `${API_BASE_URL}/api/products/${productId}`,
+                {
+                    method: "DELETE"
+                }
+            );
+
+            const data = await res.json();
+
+            if (!data.success) throw new Error();
+
+            showSuccessModal(
+                "Product deleted successfully",
+                "Deleted"
+            );
+
+            await loadDashboardData();
+
+        } catch (err) {
+            console.error(err);
+            alert("Failed to delete product.");
+        }
+
+        return;
+    }
 });
 
 document.getElementById("successOkBtn")?.addEventListener("click", () => {
@@ -676,6 +727,83 @@ document.getElementById("editInventoryBtn")?.addEventListener("click", async () 
         btn.classList.remove("editing");
     }
 
+    displayInventoryTable();
+});
+
+const addProductBtn =
+    document.getElementById("addProductBtn");
+
+const addProductModal =
+    document.getElementById("addProductModal");
+
+const cancelAddProductBtn =
+    document.getElementById("cancelAddProductBtn");
+
+addProductBtn?.addEventListener("click", () => {
+    addProductModal.classList.remove("hidden");
+});
+
+cancelAddProductBtn?.addEventListener("click", () => {
+    addProductModal.classList.add("hidden");
+});
+
+document.getElementById("confirmAddProductBtn")?.addEventListener("click", async () => {
+
+    const product_name =
+        document.getElementById("newProductName").value;
+
+    const price =
+        Number(document.getElementById("newProductPrice").value);
+
+    const stock_count =
+        Number(document.getElementById("newProductStock").value);
+
+    const max_capacity =
+        Number(document.getElementById("newProductMax").value);
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/products`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    product_name,
+                    price,
+                    stock_count,
+                    max_capacity
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error();
+        }
+
+        addProductModal.classList.add("hidden");
+
+        await loadDashboardData();
+
+        showSuccessModal(
+            "Product added successfully!",
+            "Product Added"
+        );
+
+    } catch (err) {
+
+        console.error(err);
+
+        alert("Failed to add product.");
+    }
+});
+
+document.getElementById("showInactiveProducts")?.addEventListener("change", (e) => {
+    showInactiveProducts = e.target.checked;
     displayInventoryTable();
 });
 

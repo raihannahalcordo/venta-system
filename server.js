@@ -73,6 +73,7 @@ async function getProductInventory() {
       p.product_id,
       p.product_name,
       p.price,
+      p.is_active,
       i.inventory_id,
       i.stock_count,
       i.max_capacity,
@@ -223,6 +224,58 @@ app.get("/api/summary", async (req, res) => {
 
 app.get("/api/products", async (req, res) => {
   res.json(await getProductInventory());
+});
+
+app.delete("/api/products/:id", async (req, res) => {
+    const client = await db.connect();
+
+    try {
+        const productId = req.params.id;
+
+        await client.query(`
+            UPDATE products
+            SET is_active = FALSE
+            WHERE product_id = $1
+        `, [productId]);
+
+        await client.query(`
+            UPDATE inventory
+            SET stock_count = 0,
+                updated_at = NOW()
+            WHERE product_id = $1
+        `, [productId]);
+
+        await client.query(`
+            INSERT INTO machine_logs (log_type, message)
+            VALUES ($1, $2)
+        `, [
+            "Delete",
+            `Product ID ${productId} was removed (soft delete)`
+        ]);
+
+        broadcast({
+            type: "productInventory",
+            payload: await getProductInventory()
+        });
+
+        broadcast({
+            type: "machineLogs",
+            payload: await getMachineLogs()
+        });
+
+        broadcast({
+            type: "summary",
+            payload: await getSummary()
+        });
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false });
+    } finally {
+        client.release();
+    }
 });
 
 app.get("/api/coin-inventory", async (req, res) => {
@@ -474,6 +527,77 @@ app.post("/api/products/bulk-update", async (req, res) => {
         res.status(500).json({
             success: false,
             error: err.message
+        });
+
+    } finally {
+        client.release();
+    }
+});
+
+app.post("/api/products", async (req, res) => {
+    const client = await db.connect();
+
+    try {
+
+        const {
+            product_name,
+            price,
+            stock_count,
+            max_capacity
+        } = req.body;
+
+        await client.query("BEGIN");
+
+        const productResult = await client.query(`
+            INSERT INTO products (
+                product_name,
+                price
+            )
+            VALUES ($1, $2)
+            RETURNING *
+        `, [
+            product_name,
+            price
+        ]);
+
+        const productId = productResult.rows[0].product_id;
+
+        await client.query(`
+            INSERT INTO inventory (
+                product_id,
+                stock_count,
+                max_capacity,
+                updated_at
+            )
+            VALUES ($1, $2, $3, NOW())
+        `, [
+            productId,
+            stock_count,
+            max_capacity
+        ]);
+
+        await client.query("COMMIT");
+
+        broadcast({
+            type: "productInventory",
+            payload: await getProductInventory()
+        });
+
+        broadcast({
+            type: "summary",
+            payload: await getSummary()
+        });
+
+        res.json({ success: true });
+
+    } catch (err) {
+
+        await client.query("ROLLBACK");
+
+        console.error(err);
+
+        res.status(500).json({
+            success: false
         });
 
     } finally {
