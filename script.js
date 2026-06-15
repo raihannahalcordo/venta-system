@@ -29,6 +29,8 @@ let machineLogs = [];
 let revenueChart = null;
 let isEditMode = false;
 
+let confirmCallback = null;
+
 async function loadDashboardData() {
     try {
         const summaryResponse = await fetch(`${API_BASE_URL}/api/summary`);
@@ -457,7 +459,7 @@ async function restockProduct(productId) {
 
     } catch (err) {
         console.error("RESTOCK ERROR:", err);
-        alert("Restock failed. Check console.");
+        showErrorModal("Restock failed. Check console", "Restock Error");
     }
 }
 
@@ -510,7 +512,49 @@ function loadChart() {
     });
 }
 
+function showConfirmModal({ title, message, warning, onConfirm }) {
+    const modal = document.getElementById("successModal");
+    const titleEl = document.getElementById("successTitle");
+    const msgEl = document.getElementById("successMessage");
+    const okBtn = document.getElementById("successOkBtn");
+
+    titleEl.innerText = title;
+
+    msgEl.innerHTML = `
+        <p>${message}</p>
+        ${warning ? `<p style="margin-top:10px;color:#f87171;font-size:0.9rem;">
+            ${warning}
+        </p>` : ""}
+    `;
+
+    // IMPORTANT: only show ONE button in confirm mode
+    okBtn.innerText = "Yes, Confirm";
+    okBtn.style.display = "inline-block";
+
+    confirmCallback = onConfirm;
+
+    modal.classList.remove("hidden");
+}
+
 function showSuccessModal(message = "Success", title = "Success") {
+    const modal = document.getElementById("successModal");
+    const titleEl = document.getElementById("successTitle");
+    const msgEl = document.getElementById("successMessage");
+    const okBtn = document.getElementById("successOkBtn");
+
+    titleEl.innerText = title;
+    msgEl.innerText = message;
+
+    // IMPORTANT RESET
+    confirmCallback = null;
+
+    okBtn.innerText = "OK";
+    okBtn.style.display = "inline-block";
+
+    modal.classList.remove("hidden");
+}
+
+function showErrorModal(message = "Something went wrong", title = "Error") {
     const modal = document.getElementById("successModal");
     const titleEl = document.getElementById("successTitle");
     const msgEl = document.getElementById("successMessage");
@@ -518,6 +562,7 @@ function showSuccessModal(message = "Success", title = "Success") {
     titleEl.innerText = title;
     msgEl.innerText = message;
 
+    titleEl.style.color = "#ef4444"; 
     modal.classList.remove("hidden");
 }
 
@@ -564,10 +609,9 @@ async function clearLogs() {
         if (!res.ok) throw new Error("Failed");
 
         await loadDashboardData();
-        alert("Logs cleared.");
     } catch (err) {
         console.error(err);
-        alert("Failed to clear logs.");
+        showErrorModal("Failed to clear logs", "Error");
     }
 }
 
@@ -590,51 +634,79 @@ navLinks.forEach(link => {
     });
 });
 
+document.getElementById("cancelModalBtn")?.addEventListener("click", () => {
+    confirmCallback = null;
+    document.getElementById("successModal").classList.add("hidden");
+});
+
+document.getElementById("successOkBtn")?.addEventListener("click", async () => {
+    if (!confirmCallback) return;
+
+    const fn = confirmCallback;
+    confirmCallback = null;
+
+    document.getElementById("successModal").classList.add("hidden");
+
+    await fn();
+});
+
 // CLEAR TRANSACTIONS
-document.getElementById("clearTransactionsBtn")?.addEventListener("click", async () => {
-    const confirmed = confirm("Are you sure you want to clear all transactions?");
-    if (!confirmed) return;
+document.getElementById("clearTransactionsBtn")?.addEventListener("click", () => {
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/transactions/clear`, {
-            method: "DELETE"
-        });
+    showConfirmModal({
+        title: "Clear Transactions",
+        message: "Are you sure you want to clear all transactions?",
+        onConfirm: async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/transactions/clear`, {
+                    method: "DELETE"
+                });
 
-        const data = await response.json();
+                const data = await response.json();
 
-        if (!data.success) throw new Error();
+                if (!data.success) throw new Error();
 
-        alert("Transactions cleared successfully.");
-        await loadDashboardData();
+                showSuccessModal("Transactions cleared successfully", "Cleared");
 
-    } catch (err) {
-        console.error(err);
-        alert("Failed to clear transactions.");
-    }
+                await loadDashboardData();
+
+            } catch (err) {
+                console.error(err);
+                showErrorModal("Failed to clear transactions", "Error");
+            }
+        }
+    });
+
 });
 
 
 // CLEAR MACHINE LOGS
-document.getElementById("clearLogsBtn")?.addEventListener("click", async () => {
-    const confirmed = confirm("Are you sure you want to clear all machine logs?");
-    if (!confirmed) return;
+document.getElementById("clearLogsBtn")?.addEventListener("click", () => {
 
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/machine-logs/clear`, {
-            method: "DELETE"
-        });
+    showConfirmModal({
+        title: "Clear Machine Logs",
+        message: "Are you sure you want to clear all machine logs?",
+        onConfirm: async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/machine-logs/clear`, {
+                    method: "DELETE"
+                });
 
-        const data = await res.json();
+                const data = await res.json();
 
-        if (!res.ok || !data.success) throw new Error();
+                if (!res.ok || !data.success) throw new Error();
 
-        alert("Machine logs cleared successfully.");
-        await loadDashboardData();
+                showSuccessModal("Machine logs cleared successfully", "Cleared");
 
-    } catch (err) {
-        console.error(err);
-        alert("Failed to clear machine logs.");
-    }
+                await loadDashboardData();
+
+            } catch (err) {
+                console.error(err);
+                showErrorModal("Failed to clear machine logs", "Error");
+            }
+        }
+    });
+
 });
 
 const exportBtn = document.getElementById("exportBtn");
@@ -697,7 +769,7 @@ if (confirmBtn) {
 
             resetModal.classList.add("hidden");
 
-            alert("Coin inventory reset successfully!");
+            showSuccessModal("Coin inventory reset successfully", "Reset Complete");
 
         } catch (err) {
             console.error(err);
@@ -782,8 +854,6 @@ document.getElementById("successOkBtn")?.addEventListener("click", () => {
 });
 
 document.getElementById("exportLogsBtn")?.addEventListener("click", exportLogsToCSV);
-
-document.getElementById("clearLogsBtn")?.addEventListener("click", clearLogs);
 
 document.getElementById("editInventoryBtn")?.addEventListener("click", async () => {
     const btn = document.getElementById("editInventoryBtn");
@@ -870,7 +940,7 @@ document.getElementById("confirmAddProductBtn")?.addEventListener("click", async
 
         console.error(err);
 
-        alert("Failed to add product.");
+        showErrorModal("Failed to add product", "Add Product Error");
     }
 });
 

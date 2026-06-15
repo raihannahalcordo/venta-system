@@ -922,3 +922,13 @@ td .deactivate-btn,
 td .reactivate-btn {
     margin-right: 5px;
 }
+
+/* FORCE cancel button inside success modal to be grey */
+.success-box .btn-cancel {
+    background: #e0e0e0 !important;
+    color: #2a353b !important;
+}
+
+.success-box .btn-cancel:hover {
+    background: #cfcfcf !important;
+}

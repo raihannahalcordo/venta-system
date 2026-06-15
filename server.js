@@ -33,34 +33,53 @@ function broadcast(data) {
 }
 
 app.post("/api/coin-inventory/reset", async (req, res) => {
-    try {
-        const { machineId } = req.body;
+    const client = await db.connect();
 
-        const result = await db.query(`
-            UPDATE coin_inventory
-            SET one_peso = 0,
-                five_peso = 0,
-                ten_peso = 0,
-                twenty_peso = 0,
-                updated_at = NOW()
-            WHERE id = 1
+    try {
+        await client.query("BEGIN");
+
+        await client.query(`
+            TRUNCATE TABLE coin_inventory
+            RESTART IDENTITY
+        `);
+
+        const result = await client.query(`
+            INSERT INTO coin_inventory (
+                one_peso,
+                five_peso,
+                ten_peso,
+                twenty_peso,
+                updated_at
+            )
+            VALUES (0, 0, 0, 0, NOW())
             RETURNING *
         `);
 
-        // optional: broadcast update to frontend instantly
+        await client.query("COMMIT");
+
         broadcast({
             type: "coinInventory",
             payload: result.rows[0]
         });
 
-        res.json({ success: true, data: result.rows[0] });
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
 
     } catch (err) {
-        console.error("RESET COIN ERROR:", err);  
-        res.status(500).json({ 
+
+        await client.query("ROLLBACK");
+
+        console.error("RESET COIN ERROR:", err);
+
+        res.status(500).json({
             success: false,
-            error: err.message 
+            error: err.message
         });
+
+    } finally {
+        client.release();
     }
 });
 
@@ -122,7 +141,8 @@ async function getCoinInventory() {
       twenty_peso,
       updated_at
     FROM coin_inventory
-    WHERE id = 1
+    ORDER BY updated_at DESC
+    LIMIT 1
   `);
 
   return result.rows[0];
