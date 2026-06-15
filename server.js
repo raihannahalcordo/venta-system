@@ -289,8 +289,14 @@ app.delete("/api/transactions/clear", async (req, res) => {
     try {
 
         await client.query(`
-            DELETE FROM transactions
+            TRUNCATE TABLE transactions
+            RESTART IDENTITY
         `);
+
+        broadcast({
+            type: "transactions",
+            payload: await getTransactions()
+        });
 
         res.json({
             success: true
