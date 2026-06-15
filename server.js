@@ -176,6 +176,15 @@ async function getSummary() {
     LIMIT 1
   `);
 
+  const lastTransaction =
+  transactionUpdateResult.rows[0]?.created_at || null;
+
+const lastInventory =
+  inventoryResult.rows[0]?.last_inventory_update || null;
+
+const lastCoin =
+  coinResult.rows[0]?.updated_at || null;
+
   return {
     totalRevenue: Number(revenueResult.rows[0].total_revenue || 0),
     totalTransactions: Number(revenueResult.rows[0].total_transactions || 0),
@@ -183,11 +192,7 @@ async function getSummary() {
     lowStockItems: Number(inventoryResult.rows[0].low_stock_items || 0),
     productTypes: Number(inventoryResult.rows[0].product_types || 0),
     machineStatus: "Online",
-    lastUpdated:
-      transactionUpdateResult.rows[0].last_transaction_update ||
-      inventoryResult.rows[0].last_inventory_update ||
-      coinResult.rows[0]?.updated_at ||
-      null,
+    lastUpdated: lastTransaction || lastInventory || lastCoin || null,
   };
 }
 
@@ -298,6 +303,38 @@ app.delete("/api/transactions/clear", async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to clear transactions"
+        });
+
+    } finally {
+        client.release();
+    }
+});
+
+app.delete("/api/machine-logs/clear", async (req, res) => {
+    const client = await db.connect();
+
+    try {
+
+        await client.query(`
+            TRUNCATE TABLE machine_logs
+            RESTART IDENTITY
+        `);
+
+        broadcast({
+            type: "machineLogs",
+            payload: await getMachineLogs()
+        });
+
+        res.json({
+            success: true
+        });
+
+    } catch (err) {
+
+        console.error("CLEAR LOGS ERROR:", err);
+
+        res.status(500).json({
+            success: false
         });
 
     } finally {

@@ -590,41 +590,52 @@ navLinks.forEach(link => {
     });
 });
 
-const clearBtn = document.getElementById("clearBtn");
+// CLEAR TRANSACTIONS
+document.getElementById("clearTransactionsBtn")?.addEventListener("click", async () => {
+    const confirmed = confirm("Are you sure you want to clear all transactions?");
+    if (!confirmed) return;
 
-if (clearBtn) {
-    clearBtn.addEventListener("click", async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/transactions/clear`, {
+            method: "DELETE"
+        });
 
-        const confirmed = confirm(
-            "Are you sure you want to clear all transactions?"
-        );
+        const data = await response.json();
 
-        if (!confirmed) return;
+        if (!data.success) throw new Error();
 
-        try {
-            const response = await fetch(
-                `${API_BASE_URL}/api/transactions/clear`,
-                {
-                    method: "DELETE"
-                }
-            );
+        alert("Transactions cleared successfully.");
+        await loadDashboardData();
 
-            const data = await response.json();
+    } catch (err) {
+        console.error(err);
+        alert("Failed to clear transactions.");
+    }
+});
 
-            if (!data.success) {
-                throw new Error();
-            }
 
-            alert("Transactions cleared successfully.");
+// CLEAR MACHINE LOGS
+document.getElementById("clearLogsBtn")?.addEventListener("click", async () => {
+    const confirmed = confirm("Are you sure you want to clear all machine logs?");
+    if (!confirmed) return;
 
-            await loadDashboardData();
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/machine-logs/clear`, {
+            method: "DELETE"
+        });
 
-        } catch (err) {
-            console.error(err);
-            alert("Failed to clear transactions.");
-        }
-    });
-}
+        const data = await res.json();
+
+        if (!res.ok || !data.success) throw new Error();
+
+        alert("Machine logs cleared successfully.");
+        await loadDashboardData();
+
+    } catch (err) {
+        console.error(err);
+        alert("Failed to clear machine logs.");
+    }
+});
 
 const exportBtn = document.getElementById("exportBtn");
 
