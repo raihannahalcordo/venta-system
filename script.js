@@ -393,7 +393,10 @@ async function saveInventoryChanges() {
         body: JSON.stringify({ updates })
     });
 
-    alert("Inventory updated!");
+    showSuccessModal(
+        "The inventory has been updated successfully.",
+        "Inventory Updated"
+    );
 
     isEditMode = false;
     document.getElementById("editInventoryBtn").innerText = "Edit Inventory";
@@ -559,7 +562,6 @@ function showSuccessModal(message = "Success", title = "Success") {
 
     document.getElementById("successTitle").innerText = title;
     document.getElementById("successMessage").innerText = message;
-
     document.getElementById("cancelModalBtn").style.display = "none";
 
     const okBtn = document.getElementById("successOkBtn");
@@ -582,14 +584,23 @@ function showSuccessModal(message = "Success", title = "Success") {
 }
 
 function showErrorModal(message = "Something went wrong", title = "Error") {
-    const modal = document.getElementById("successModal");
-    const titleEl = document.getElementById("successTitle");
-    const msgEl = document.getElementById("successMessage");
+    const modal = document.getElementById("errorModal");
+    const titleEl = document.getElementById("errorTitle");
+    const msgEl = document.getElementById("errorMessage");
+    const icon = modal.querySelector("i");
+    const okBtn = document.getElementById("errorOkBtn");
 
+    // text
     titleEl.innerText = title;
     msgEl.innerText = message;
 
-    titleEl.style.color = "#ef4444"; 
+    // reset + set error styles
+    icon.style.color = "#ef4444";
+    titleEl.style.color = "#ef4444";
+
+    okBtn.style.background = "#ef4444";
+    okBtn.style.color = "#fff";
+
     modal.classList.remove("hidden");
 }
 
@@ -599,7 +610,7 @@ function closeSuccessModal() {
 
 function exportLogsToCSV() {
     if (!machineLogs || machineLogs.length === 0) {
-        alert("No logs to export.");
+        showErrorModal("No logs to export", "Error");
         return;
     }
 
@@ -677,6 +688,10 @@ document.getElementById("successOkBtn")?.addEventListener("click", async () => {
     await fn();
 });
 
+document.getElementById("errorOkBtn")?.addEventListener("click", () => {
+    document.getElementById("errorModal").classList.add("hidden");
+});
+
 // CLEAR TRANSACTIONS
 document.getElementById("clearTransactionsBtn")?.addEventListener("click", () => {
 
@@ -740,7 +755,7 @@ const exportBtn = document.getElementById("exportBtn");
 
 if (exportBtn) {
     exportBtn.addEventListener("click", function() {
-        alert("Export feature coming soon.");
+        showErrorModal("Export feature coming soon.", "Not Available");
     });
 }
 
@@ -760,7 +775,10 @@ if (saveSettingsBtn) {
             WS_URL = API_BASE_URL.replace("http://", "ws://").replace("https://", "wss://");
         }
 
-        alert("Settings saved. Refresh the page to reconnect with the new API URL.");
+        showSuccessModal(
+            "Settings saved. Refresh the page to reconnect with the new API URL.",
+            "Settings Saved"
+        );
     });
 }
 
@@ -800,7 +818,7 @@ if (confirmBtn) {
 
         } catch (err) {
             console.error(err);
-            alert("Failed to reset coin inventory.");
+            showErrorModal("Coin inventory reset failed. Please try again.", "Reset Failed");
         }
     });
 }
@@ -844,7 +862,7 @@ document.addEventListener("click", async (e) => {
 
         } catch (err) {
             console.error(err);
-            alert("Failed to deactivate product.");
+            showErrorModal("Unable to deactivate the product. Please try again.", "Action Failed");
         }
 
         return;
@@ -867,7 +885,7 @@ document.addEventListener("click", async (e) => {
             await loadDashboardData();
         } catch (err) {
             console.error(err);
-            alert("Failed to reactivate product.");
+            showE("Failed to reactivate product.");
         }
         return;
     }
