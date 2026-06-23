@@ -1,3 +1,11 @@
+console.log("STARTING VERSION A30DB69");
+
+try {
+  console.log("WS PATH:", require.resolve("ws"));
+} catch (err) {
+  console.error("WS NOT FOUND");
+}
+
 const express = require("express");
 const cors = require("cors");
 const { Pool } = require("pg");
