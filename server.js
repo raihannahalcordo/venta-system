@@ -1,35 +1,21 @@
 const fs = require("fs");
 
 console.log("STARTING VERSION A30DB69");
-console.log("__dirname =", __dirname);
 
 try {
+  const modules = fs.readdirSync("./node_modules");
+  console.log("NODE_MODULE_COUNT:", modules.length);
   console.log(
-    "node_modules exists:",
-    fs.existsSync(__dirname + "/node_modules")
+    "FIRST_20_MODULES:",
+    modules.slice(0, 20).join(", ")
   );
-} catch (e) {}
-
-try {
-  console.log(
-    "ws folder exists:",
-    fs.existsSync(__dirname + "/node_modules/ws")
-  );
-} catch (e) {}
-
-try {
-  console.log("WS PATH:", require.resolve("ws"));
-} catch (err) {
-  console.error("WS NOT FOUND");
+} catch (e) {
+  console.error("CANNOT READ NODE_MODULES", e);
 }
 
-console.log("STARTING VERSION A30DB69");
-
 try {
-  console.log("WS PATH:", require.resolve("ws"));
-} catch (err) {
-  console.error("WS NOT FOUND");
-}
+  console.log("ws exists:", fs.existsSync("./node_modules/ws"));
+} catch (e) {}
 
 const express = require("express");
 const cors = require("cors");
